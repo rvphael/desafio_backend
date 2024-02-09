@@ -1,10 +1,8 @@
 #!/bin/bash
 
 # Configurações iniciais: define o banco de dados, usuário, senha e diretórios de trabalho.
-DATABASE="desafio_backend_dev"
-USER="postgres"
-PASSWORD="postgres"
-BASE_URL="https://arquivos.b3.com.br/apinegocios/tickercsv/"
+export $(cat .env | xargs)
+BASE_URL=https://arquivos.b3.com.br/apinegocios/tickercsv/
 TEMP_DIR="temp"
 EXTRACTED_DIR="${TEMP_DIR}/extracted"
 FORMATTED_DIR="${EXTRACTED_DIR}/formatted"
