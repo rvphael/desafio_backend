@@ -21,4 +21,18 @@ defmodule DesafioBackendWeb.FallbackController do
     |> put_view(html: DesafioBackendWeb.ErrorHTML, json: DesafioBackendWeb.ErrorJSON)
     |> render(:"404")
   end
+
+  def call(conn, {:error, "Invalid date format"}) do
+    conn
+    |> put_status(:bad_request)
+    |> put_view(json: DesafioBackendWeb.ErrorJSON)
+    |> render(:"400")
+  end
+
+  def call(conn, {:error, _reason}) do
+    conn
+    |> put_status(:internal_server_error)
+    |> put_view(json: DesafioBackendWeb.ErrorJSON)
+    |> render(:"500")
+  end
 end
