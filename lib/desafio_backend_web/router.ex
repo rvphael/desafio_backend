@@ -7,5 +7,7 @@ defmodule DesafioBackendWeb.Router do
 
   scope "/api", DesafioBackendWeb do
     pipe_through :api
+
+    get "/trades", TradeController, only: [:show]
   end
 end
