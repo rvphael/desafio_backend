@@ -11,16 +11,17 @@ defmodule DesafioBackend.Trading do
   the highest daily trading volume (max_daily_volume)
   for a given ticker and optionally filtered by date.
   """
-  @spec get_trade_summary(String.t(), Date.t() | nil) :: map
+  @spec get_trade_summary(String.t(), Date.t() | nil) :: {:ok, map} | {:error, atom}
   def get_trade_summary(ticker, trade_date \\ nil) do
-    max_range_value = max_range_value(ticker, trade_date) || 0
-    max_daily_volume = max_daily_volume(ticker, trade_date) || 0
-
-    %{
-      ticker: ticker,
-      max_range_value: max_range_value,
-      max_daily_volume: max_daily_volume
-    }
+    with {:ok, max_range_value} <- max_range_value(ticker, trade_date),
+         max_daily_volume <- max_daily_volume(ticker, trade_date) do
+      {:ok,
+       %{
+         ticker: ticker,
+         max_range_value: max_range_value || 0,
+         max_daily_volume: max_daily_volume || 0
+       }}
+    end
   end
 
   defp max_range_value(ticker, trade_date) do
@@ -32,11 +33,13 @@ defmodule DesafioBackend.Trading do
 
     case Repo.query(sql, [ticker] ++ cond_sql_params(trade_date)) do
       {:ok, %{rows: [row]}} ->
-        List.first(row)
+        case List.first(row) do
+          nil -> {:error, :not_found}
+          value -> {:ok, value}
+        end
 
       _ ->
-        IO.puts("Nenhum resultado retornado.")
-        nil
+        {:error, :not_found}
     end
   end
 

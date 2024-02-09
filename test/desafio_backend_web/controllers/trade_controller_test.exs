@@ -1,100 +1,65 @@
 defmodule DesafioBackendWeb.TradeControllerTest do
   use DesafioBackendWeb.ConnCase
 
-  import DesafioBackend.TradingFixtures
-
-  alias DesafioBackend.Trading.Trade
-
-  @create_attrs %{
-    hora_fechamento: "some hora_fechamento",
-    data_negocio: ~D[2024-02-08],
-    codigo_instrumento: "some codigo_instrumento",
-    preco_negocio: 120.5,
-    quantidade_negociada: 42
-  }
-  @update_attrs %{
-    hora_fechamento: "some updated hora_fechamento",
-    data_negocio: ~D[2024-02-09],
-    codigo_instrumento: "some updated codigo_instrumento",
-    preco_negocio: 456.7,
-    quantidade_negociada: 43
-  }
-  @invalid_attrs %{hora_fechamento: nil, data_negocio: nil, codigo_instrumento: nil, preco_negocio: nil, quantidade_negociada: nil}
-
   setup %{conn: conn} do
-    {:ok, conn: put_req_header(conn, "accept", "application/json")}
+    trade_date = ~D[2024-02-08]
+
+    insert(:trade,
+      codigo_instrumento: "PETR4",
+      data_negocio: trade_date,
+      preco_negocio: 100.0,
+      quantidade_negociada: 100
+    )
+
+    insert(:trade,
+      codigo_instrumento: "PETR4",
+      data_negocio: trade_date,
+      preco_negocio: 150.0,
+      quantidade_negociada: 200
+    )
+
+    conn = put_req_header(conn, "accept", "application/json")
+
+    {:ok, conn: conn}
   end
 
-  describe "index" do
-    test "lists all trades", %{conn: conn} do
-      conn = get(conn, ~p"/api/trades")
-      assert json_response(conn, 200)["data"] == []
-    end
-  end
+  describe "GET /trades" do
+    test "returns trade summary for a given ticker", %{conn: conn} do
+      params = %{"ticker" => "PETR4"}
 
-  describe "create trade" do
-    test "renders trade when data is valid", %{conn: conn} do
-      conn = post(conn, ~p"/api/trades", trade: @create_attrs)
-      assert %{"id" => id} = json_response(conn, 201)["data"]
+      expected_summary = %{
+        "ticker" => "PETR4",
+        "max_range_value" => 150.0,
+        "max_daily_volume" => 300
+      }
 
-      conn = get(conn, ~p"/api/trades/#{id}")
+      conn = get(conn, "/api/trades", params)
 
-      assert %{
-               "id" => ^id,
-               "codigo_instrumento" => "some codigo_instrumento",
-               "data_negocio" => "2024-02-08",
-               "hora_fechamento" => "some hora_fechamento",
-               "preco_negocio" => 120.5,
-               "quantidade_negociada" => 42
-             } = json_response(conn, 200)["data"]
+      assert json_response(conn, 200) == expected_summary
     end
 
-    test "renders errors when data is invalid", %{conn: conn} do
-      conn = post(conn, ~p"/api/trades", trade: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
-    end
-  end
+    test "returns trade summary for a given ticker and date", %{
+      conn: conn
+    } do
+      params = %{"ticker" => "PETR4", "data_negocio" => "2024-02-08"}
 
-  describe "update trade" do
-    setup [:create_trade]
+      expected_summary = %{
+        "ticker" => "PETR4",
+        "max_range_value" => 150.0,
+        "max_daily_volume" => 300
+      }
 
-    test "renders trade when data is valid", %{conn: conn, trade: %Trade{id: id} = trade} do
-      conn = put(conn, ~p"/api/trades/#{trade}", trade: @update_attrs)
-      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+      conn = get(conn, "/api/trades", params)
 
-      conn = get(conn, ~p"/api/trades/#{id}")
-
-      assert %{
-               "id" => ^id,
-               "codigo_instrumento" => "some updated codigo_instrumento",
-               "data_negocio" => "2024-02-09",
-               "hora_fechamento" => "some updated hora_fechamento",
-               "preco_negocio" => 456.7,
-               "quantidade_negociada" => 43
-             } = json_response(conn, 200)["data"]
+      assert json_response(conn, 200) == expected_summary
     end
 
-    test "renders errors when data is invalid", %{conn: conn, trade: trade} do
-      conn = put(conn, ~p"/api/trades/#{trade}", trade: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+    test "returns not found if no data found for given parameters", %{conn: conn} do
+      params = %{"ticker" => "INVALID"}
+
+      conn = get(conn, "/api/trades", params)
+
+      assert json_response(conn, 404) == %{"errors" => %{"detail" => "Not Found"}}
     end
-  end
-
-  describe "delete trade" do
-    setup [:create_trade]
-
-    test "deletes chosen trade", %{conn: conn, trade: trade} do
-      conn = delete(conn, ~p"/api/trades/#{trade}")
-      assert response(conn, 204)
-
-      assert_error_sent 404, fn ->
-        get(conn, ~p"/api/trades/#{trade}")
-      end
-    end
-  end
-
-  defp create_trade(_) do
-    trade = trade_fixture()
-    %{trade: trade}
   end
 end

@@ -2,7 +2,9 @@ defmodule DesafioBackendWeb.ErrorJSONTest do
   use DesafioBackendWeb.ConnCase, async: true
 
   test "renders 404" do
-    assert DesafioBackendWeb.ErrorJSON.render("404.json", %{}) == %{errors: %{detail: "Not Found"}}
+    assert DesafioBackendWeb.ErrorJSON.render("404.json", %{}) == %{
+             errors: %{detail: "Not Found"}
+           }
   end
 
   test "renders 500" do

@@ -1,43 +1,38 @@
 defmodule DesafioBackendWeb.TradeController do
   use DesafioBackendWeb, :controller
 
-  alias DesafioBackend.Trading
-  alias DesafioBackend.Trading.Trade
-
   action_fallback DesafioBackendWeb.FallbackController
 
-  def index(conn, _params) do
-    trades = Trading.list_trades()
-    render(conn, :index, trades: trades)
-  end
+  alias DesafioBackend.Trading
 
-  def create(conn, %{"trade" => trade_params}) do
-    with {:ok, %Trade{} = trade} <- Trading.create_trade(trade_params) do
-      conn
-      |> put_status(:created)
-      |> put_resp_header("location", ~p"/api/trades/#{trade}")
-      |> render(:show, trade: trade)
+  def show(conn, params) do
+    with {:ok, formatted_date} <- format_date(params["data_negocio"]),
+         {:ok, trade_summary} <- Trading.get_trade_summary(params["ticker"], formatted_date) do
+      send_ok_response(conn, trade_summary)
+    else
+      {:error, _} = error ->
+        send_error_response(error)
     end
   end
 
-  def show(conn, %{"id" => id}) do
-    trade = Trading.get_trade!(id)
-    render(conn, :show, trade: trade)
-  end
+  defp format_date(nil), do: {:ok, nil}
 
-  def update(conn, %{"id" => id, "trade" => trade_params}) do
-    trade = Trading.get_trade!(id)
-
-    with {:ok, %Trade{} = trade} <- Trading.update_trade(trade, trade_params) do
-      render(conn, :show, trade: trade)
+  defp format_date(date_str) do
+    case Date.from_iso8601(date_str) do
+      {:ok, date} -> {:ok, date}
+      {:error, _} -> {:error, "Invalid date format"}
     end
   end
 
-  def delete(conn, %{"id" => id}) do
-    trade = Trading.get_trade!(id)
-
-    with {:ok, %Trade{}} <- Trading.delete_trade(trade) do
-      send_resp(conn, :no_content, "")
-    end
+  defp send_ok_response(conn, trade_summary) do
+    conn
+    |> put_status(:ok)
+    |> render("show.json", trade: trade_summary)
   end
+
+  defp send_error_response({:error, "Invalid date format"}),
+    do: %{error: "Invalid date format"}
+
+  defp send_error_response({:error, reason}),
+    do: {:error, reason}
 end
