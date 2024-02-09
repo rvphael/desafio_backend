@@ -25,3 +25,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 desafio_backend-*.tar
 
+/.elixir_ls/
+/temp/
