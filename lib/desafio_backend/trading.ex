@@ -1,104 +1,76 @@
 defmodule DesafioBackend.Trading do
   @moduledoc """
-  The Trading context.
+  Module responsible for providing functionalities related to trades.
   """
-
   import Ecto.Query, warn: false
+
   alias DesafioBackend.Repo
 
-  alias DesafioBackend.Trading.Trade
-
   @doc """
-  Returns the list of trades.
-
-  ## Examples
-
-      iex> list_trades()
-      [%Trade{}, ...]
-
+  Returns the highest trading value (max_range_value) and
+  the highest daily trading volume (max_daily_volume)
+  for a given ticker and optionally filtered by date.
   """
-  def list_trades do
-    Repo.all(Trade)
+  @spec get_trade_summary(String.t(), Date.t() | nil) :: map
+  def get_trade_summary(ticker, trade_date \\ nil) do
+    max_range_value = max_range_value(ticker, trade_date) || 0
+    max_daily_volume = max_daily_volume(ticker, trade_date) || 0
+
+    %{
+      ticker: ticker,
+      max_range_value: max_range_value,
+      max_daily_volume: max_daily_volume
+    }
   end
 
-  @doc """
-  Gets a single trade.
+  defp max_range_value(ticker, trade_date) do
+    sql =
+      """
+      SELECT MAX(preco_negocio) FROM trades
+      WHERE codigo_instrumento = $1
+      """ <> cond_sql_date_filter(trade_date)
 
-  Raises `Ecto.NoResultsError` if the Trade does not exist.
+    case Repo.query(sql, [ticker] ++ cond_sql_params(trade_date)) do
+      {:ok, %{rows: [row]}} ->
+        List.first(row)
 
-  ## Examples
-
-      iex> get_trade!(123)
-      %Trade{}
-
-      iex> get_trade!(456)
-      ** (Ecto.NoResultsError)
-
-  """
-  def get_trade!(id), do: Repo.get!(Trade, id)
-
-  @doc """
-  Creates a trade.
-
-  ## Examples
-
-      iex> create_trade(%{field: value})
-      {:ok, %Trade{}}
-
-      iex> create_trade(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def create_trade(attrs \\ %{}) do
-    %Trade{}
-    |> Trade.changeset(attrs)
-    |> Repo.insert()
+      _ ->
+        IO.puts("Nenhum resultado retornado.")
+        nil
+    end
   end
 
-  @doc """
-  Updates a trade.
+  defp max_daily_volume(ticker, trade_date) do
+    sql =
+      """
+      SELECT data_negocio, SUM(quantidade_negociada) as volume
+      FROM trades
+      WHERE codigo_instrumento = $1
+      """ <>
+        cond_sql_date_filter(trade_date) <>
+        """
+        GROUP BY data_negocio
+        ORDER BY volume DESC
+        LIMIT 1
+        """
 
-  ## Examples
+    result = Repo.query(sql, [ticker] ++ cond_sql_params(trade_date))
 
-      iex> update_trade(trade, %{field: new_value})
-      {:ok, %Trade{}}
+    case result do
+      {:ok, %{rows: []}} ->
+        nil
 
-      iex> update_trade(trade, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
+      {:ok, %{rows: [row]}} ->
+        List.last(row)
 
-  """
-  def update_trade(%Trade{} = trade, attrs) do
-    trade
-    |> Trade.changeset(attrs)
-    |> Repo.update()
+      _ ->
+        nil
+    end
   end
 
-  @doc """
-  Deletes a trade.
+  defp cond_sql_date_filter(nil), do: ""
+  defp cond_sql_date_filter(_), do: "AND data_negocio = $2"
 
-  ## Examples
-
-      iex> delete_trade(trade)
-      {:ok, %Trade{}}
-
-      iex> delete_trade(trade)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def delete_trade(%Trade{} = trade) do
-    Repo.delete(trade)
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking trade changes.
-
-  ## Examples
-
-      iex> change_trade(trade)
-      %Ecto.Changeset{data: %Trade{}}
-
-  """
-  def change_trade(%Trade{} = trade, attrs \\ %{}) do
-    Trade.changeset(trade, attrs)
-  end
+  defp cond_sql_params(nil), do: []
+  defp cond_sql_params(trade_date), do: [trade_date]
 end
