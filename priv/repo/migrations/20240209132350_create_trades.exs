@@ -10,6 +10,7 @@ defmodule DesafioBackend.Repo.Migrations.CreateTrades do
       add :quantidade_negociada, :integer
     end
 
+    create index(:trades, [:codigo_instrumento])
     create index(:trades, [:data_negocio, :codigo_instrumento])
   end
 end
