@@ -24,6 +24,7 @@ defmodule DesafioBackend.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import DesafioBackend.DataCase
+      import DesafioBackend.Factory
     end
   end
 
