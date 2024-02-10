@@ -51,10 +51,6 @@ defmodule DesafioBackend.Trading do
       {:ok, %{rows: [row]}} when row != nil ->
         {:ok, List.first(row)}
 
-      {:ok, %{rows: [nil]}} ->
-        # No matches found
-        {:error, :not_found}
-
       _ ->
         {:error, :not_found}
     end
