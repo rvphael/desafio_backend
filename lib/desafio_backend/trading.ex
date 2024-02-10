@@ -1,93 +1,64 @@
 defmodule DesafioBackend.Trading do
   @moduledoc """
-  Module responsible for trading operations.
+  Module for trading operations.
   """
-  import Ecto.Query, warn: false
+
+  import Ecto.Query, only: [from: 2]
   alias DesafioBackend.Repo
+  alias DesafioBackend.Trading.Trade
 
   @doc """
   Returns the highest trading value (max_range_value) and
   the highest daily trading volume (max_daily_volume)
   for a given ticker and optionally filtered by date.
   """
-  @spec get_trade_summary(String.t(), Date.t() | nil) :: {:ok, map} | {:error, atom}
+  @spec get_trade_summary(String.t(), Date.t()) :: {:ok, map()} | {:error, atom()}
   def get_trade_summary(ticker, trade_date \\ nil) do
-    with {:ok, max_range_value} <- max_range_value(ticker, trade_date),
-         {:ok, max_daily_volume} <- max_daily_volume(ticker, trade_date) do
+    max_range_value = get_agg_value(ticker, trade_date, :max, :preco_negocio)
+    max_daily_volume = get_agg_value(ticker, trade_date, :sum, :quantidade_negociada)
+
+    build_response(ticker, max_range_value, max_daily_volume)
+  end
+
+  defp get_agg_value(ticker, trade_date, agg_func, field),
+    do:
+      Trade
+      |> build_query(ticker, trade_date, agg_func, field)
+      |> Repo.one()
+      |> handle_result()
+
+  defp build_query(schema, ticker, trade_date, agg_func, field) do
+    query =
+      from t in schema,
+        where: t.codigo_instrumento == ^ticker
+
+    query = apply_date_filter(query, trade_date)
+    apply_agg_func(query, agg_func, field)
+  end
+
+  defp apply_agg_func(query, :max, field),
+    do: from(q in query, select: max(field(q, ^field)))
+
+  defp apply_agg_func(query, :sum, field),
+    do: from(q in query, select: sum(field(q, ^field)))
+
+  defp apply_date_filter(query, nil), do: query
+
+  defp apply_date_filter(query, date) do
+    from t in query, where: t.data_negocio >= ^date
+  end
+
+  defp build_response(_ticker, 0, 0), do: {:error, :not_found}
+
+  defp build_response(ticker, max_range_value, max_daily_volume),
+    do:
       {:ok,
        %{
          ticker: ticker,
-         max_range_value: max_range_value || 0,
-         max_daily_volume: max_daily_volume || 0
+         max_range_value: max_range_value,
+         max_daily_volume: max_daily_volume
        }}
-    else
-      _error -> {:error, :not_found}
-    end
-  end
 
-  defp max_range_value(ticker, nil) do
-    query =
-      from t in "trade_summary_recent_by_ticker",
-        where: t.codigo_instrumento == ^ticker,
-        select: max(t.max_preco)
-
-    Repo.one(query)
-    |> case do
-      nil -> {:error, :not_found}
-      value -> {:ok, value}
-    end
-  end
-
-  defp max_range_value(ticker, trade_date) do
-    sql = """
-    SELECT MAX(preco_negocio) FROM trades
-    WHERE codigo_instrumento = $1 AND data_negocio = $2
-    """
-
-    case Repo.query(sql, [ticker, trade_date]) do
-      {:ok, %{rows: []}} ->
-        {:error, :not_found}
-
-      {:ok, %{rows: [row]}} when row != nil ->
-        {:ok, List.first(row)}
-
-      _ ->
-        {:error, :not_found}
-    end
-  end
-
-  defp max_daily_volume(ticker, nil) do
-    query =
-      from t in "trade_summary_recent_by_ticker",
-        where: t.codigo_instrumento == ^ticker,
-        select: %{max_daily_volume: t.total_volume}
-
-    Repo.one(query)
-    |> case do
-      %{max_daily_volume: max_daily_volume} ->
-        {:ok, max_daily_volume}
-
-      _ ->
-        {:error, :not_found}
-    end
-  end
-
-  defp max_daily_volume(ticker, trade_date) do
-    sql =
-      """
-      SELECT SUM(quantidade_negociada) as volume
-      FROM trades
-      WHERE codigo_instrumento = $1 AND data_negocio = $2
-      GROUP BY data_negocio
-      ORDER BY volume DESC
-      LIMIT 1
-      """
-
-    Repo.query(sql, [ticker, trade_date])
-    |> case do
-      {:ok, %{rows: []}} -> nil
-      {:ok, %{rows: [row]}} -> {:ok, List.last(row)}
-      _ -> nil
-    end
-  end
+  defp handle_result(nil), do: 0
+  defp handle_result(value), do: value
 end
