@@ -4,13 +4,17 @@ defmodule DesafioBackend.TestDataHelper do
   To partition the trades table and refresh the materialized view.
   """
   alias DesafioBackend.Repo
+  alias Ecto.Adapters.SQL
 
+  @type result :: {:ok, SQL.query_result()}
+
+  @spec setup_trade_data(Date.t()) :: result()
   def setup_trade_data(trade_date) do
     partition_name = "trades_#{Date.to_iso8601(trade_date)}"
     start_date = Date.to_iso8601(trade_date)
     end_date = Date.add(trade_date, 1) |> Date.to_iso8601()
 
-    Ecto.Adapters.SQL.query(
+    SQL.query(
       Repo,
       """
       DO $$
@@ -28,8 +32,9 @@ defmodule DesafioBackend.TestDataHelper do
     )
   end
 
+  @spec refresh_trade_summary_materialized_view() :: result()
   def refresh_trade_summary_materialized_view do
-    Ecto.Adapters.SQL.query(
+    SQL.query(
       Repo,
       """
       REFRESH MATERIALIZED VIEW trade_summary_recent_by_ticker;

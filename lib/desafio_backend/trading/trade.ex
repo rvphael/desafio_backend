@@ -1,4 +1,7 @@
 defmodule DesafioBackend.Trading.Trade do
+  @moduledoc """
+  Schema for trades.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

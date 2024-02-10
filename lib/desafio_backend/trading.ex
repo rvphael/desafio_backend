@@ -1,4 +1,7 @@
 defmodule DesafioBackend.Trading do
+  @moduledoc """
+  Module responsible for trading operations.
+  """
   import Ecto.Query, warn: false
   alias DesafioBackend.Repo
 
@@ -36,17 +39,24 @@ defmodule DesafioBackend.Trading do
   end
 
   defp max_range_value(ticker, trade_date) do
-    sql =
-      """
-      SELECT MAX(preco_negocio) FROM trades
-      WHERE codigo_instrumento = $1 AND data_negocio = $2
-      """
+    sql = """
+    SELECT MAX(preco_negocio) FROM trades
+    WHERE codigo_instrumento = $1 AND data_negocio = $2
+    """
 
-    Repo.query(sql, [ticker, trade_date])
-    |> case do
-      {:ok, %{rows: [nil]}} -> {:error, :not_found}
-      {:ok, %{rows: [row]}} -> {:ok, List.first(row)}
-      _ -> {:error, :not_found}
+    case Repo.query(sql, [ticker, trade_date]) do
+      {:ok, %{rows: []}} ->
+        {:error, :not_found}
+
+      {:ok, %{rows: [row]}} when row != nil ->
+        {:ok, List.first(row)}
+
+      {:ok, %{rows: [nil]}} ->
+        # No matches found
+        {:error, :not_found}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 

@@ -7,7 +7,7 @@ defmodule DesafioBackend.Factory do
 
   alias DesafioBackend.Trading.Trade
 
-  @spec trade_factory() :: %DesafioBackend.Trading.Trade{
+  @type trade :: %Trade{
           __meta__: Ecto.Schema.Metadata.t(),
           codigo_instrumento: <<_::48>>,
           data_negocio: Date.t(),
@@ -16,6 +16,8 @@ defmodule DesafioBackend.Factory do
           preco_negocio: float(),
           quantidade_negociada: 42
         }
+
+  @spec trade_factory() :: trade()
   def trade_factory do
     %Trade{
       hora_fechamento: "034133920",
