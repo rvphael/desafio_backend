@@ -1,8 +1,10 @@
 defmodule DesafioBackendWeb.TradeControllerTest do
-  use DesafioBackendWeb.ConnCase
+  use DesafioBackendWeb.ConnCase, async: true
 
   setup %{conn: conn} do
     trade_date = ~D[2024-02-08]
+
+    setup_trade_data(trade_date)
 
     insert(:trade,
       codigo_instrumento: "PETR4",
@@ -17,6 +19,8 @@ defmodule DesafioBackendWeb.TradeControllerTest do
       preco_negocio: 150.0,
       quantidade_negociada: 200
     )
+
+    refresh_trade_summary_materialized_view()
 
     conn = put_req_header(conn, "accept", "application/json")
 

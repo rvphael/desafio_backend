@@ -38,6 +38,7 @@ mix ecto.create && mix ecto.migrate
 ```
 
 ### Processamento e Importação de Dados
+Rode o comando `chmod +x process_and_import.sh` para dar permissão de execução ao script.
 
 Execute o script `process_and_import.sh` para baixar, processar e importar os dados dos últimos 7 dias úteis de negociações da B3.
 

@@ -29,6 +29,7 @@ defmodule DesafioBackendWeb.ConnCase do
       import Phoenix.ConnTest
       import DesafioBackendWeb.ConnCase
       import DesafioBackend.Factory
+      import DesafioBackend.TestDataHelper
     end
   end
 

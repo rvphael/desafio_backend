@@ -25,6 +25,7 @@ defmodule DesafioBackend.DataCase do
       import Ecto.Query
       import DesafioBackend.DataCase
       import DesafioBackend.Factory
+      import DesafioBackend.TestDataHelper
     end
   end
 

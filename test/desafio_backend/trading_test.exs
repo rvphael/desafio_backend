@@ -9,19 +9,25 @@ defmodule DesafioBackend.TradingTest do
     @trade_date ~D[2024-02-08]
 
     setup do
+      trade_date = ~D[2024-02-08]
+
+      setup_trade_data(trade_date)
+
       insert(:trade,
-        codigo_instrumento: @valid_ticker,
-        data_negocio: @trade_date,
+        codigo_instrumento: "PETR4",
+        data_negocio: trade_date,
         preco_negocio: 100.0,
         quantidade_negociada: 100
       )
 
       insert(:trade,
-        codigo_instrumento: @valid_ticker,
-        data_negocio: @trade_date,
+        codigo_instrumento: "PETR4",
+        data_negocio: trade_date,
         preco_negocio: 150.0,
         quantidade_negociada: 200
       )
+
+      refresh_trade_summary_materialized_view()
 
       :ok
     end
