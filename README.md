@@ -25,16 +25,10 @@ cp .env_example .env
 
 2. **Prepare o PostgreSQL:** Para o funcionamento do script de processamento e importação de dados, certifique-se de configurar o método de autenticação do PostgreSQL local para `md5` editando o arquivo `pg_hba.conf` e reiniciando o serviço do PostgreSQL.
 
-3. **Instale as dependências do projeto:**
+3. **Instale as dependências do projeto, crie e migre o banco de dados**
 
 ```bash
-mix deps.get
-```
-
-4. **Crie e migre o banco de dados:**
-
-```bash
-mix ecto.create && mix ecto.migrate
+mix setup
 ```
 
 ### Processamento e Importação de Dados
